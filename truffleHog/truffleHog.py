@@ -179,13 +179,15 @@ def print_results(printJson, issue):
             print(branchStr)
             commitStr = "{}Commit: {}{}".format(bcolors.OKGREEN, prev_commit, bcolors.ENDC)
             print(commitStr)
-            print(printableDiff)
+            print(*printableDiff, sep = "\n")
         else:
             branchStr = "{}Branch: {}{}".format(bcolors.OKGREEN, branch_name.encode('utf-8'), bcolors.ENDC)
             print(branchStr)
             commitStr = "{}Commit: {}{}".format(bcolors.OKGREEN, prev_commit.encode('utf-8'), bcolors.ENDC)
             print(commitStr)
-            print(printableDiff.encode('utf-8'))
+            for printable_diff in printableDiff:
+                print(printable_diff.encode('utf-8'))
+
         print("~~~~~~~~~~~~~~~~~~~~~")
 
 def find_entropy(printableDiff, commit_time, branch_name, prev_commit, blob, commitHash):
@@ -226,9 +228,10 @@ def regex_check(printableDiff, commit_time, branch_name, prev_commit, blob, comm
         secret_regexes = regexes
     regex_matches = []
     for key in secret_regexes:
+        found_diffs = []
         found_strings = secret_regexes[key].findall(printableDiff)
         for found_string in found_strings:
-            found_diff = printableDiff.replace(printableDiff, bcolors.WARNING + found_string + bcolors.ENDC)
+            found_diffs.append(printableDiff.replace(printableDiff, bcolors.WARNING + found_string + bcolors.ENDC))
         if found_strings:
             foundRegex = {}
             foundRegex['date'] = commit_time
@@ -237,7 +240,7 @@ def regex_check(printableDiff, commit_time, branch_name, prev_commit, blob, comm
             foundRegex['commit'] = prev_commit.message
             foundRegex['diff'] = blob.diff.decode('utf-8', errors='replace')
             foundRegex['stringsFound'] = found_strings
-            foundRegex['printDiff'] = found_diff
+            foundRegex['printDiff'] = found_diffs
             foundRegex['reason'] = key
             foundRegex['commitHash'] = prev_commit.hexsha
             regex_matches.append(foundRegex)
