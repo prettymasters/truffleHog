@@ -152,6 +152,7 @@ def clone_git_repo(git_url):
     Repo.clone_from(git_url, project_path)
     return project_path
 
+
 def print_results(printJson, issue):
     commit_time = issue['date']
     branch_name = issue['branch']
@@ -162,7 +163,7 @@ def print_results(printJson, issue):
     path = issue['path']
 
     if printJson:
-        print(json.dumps(issue, sort_keys=True))
+        print(json.dumps(issue, sort_keys=True, indent=2))
     else:
         print("~~~~~~~~~~~~~~~~~~~~~")
         reason = "{}Reason: {}{}".format(bcolors.OKGREEN, reason, bcolors.ENDC)
@@ -179,7 +180,7 @@ def print_results(printJson, issue):
             print(branchStr)
             commitStr = "{}Commit: {}{}".format(bcolors.OKGREEN, prev_commit, bcolors.ENDC)
             print(commitStr)
-            print(*printableDiff, sep = "\n")
+            print(*printableDiff, sep = "\n---------------------\n")
         else:
             branchStr = "{}Branch: {}{}".format(bcolors.OKGREEN, branch_name.encode('utf-8'), bcolors.ENDC)
             print(branchStr)
@@ -254,7 +255,7 @@ def diff_worker(diff, curr_commit, prev_commit, branch_name, commitHash, custom_
             continue
         if not path_included(blob, path_inclusions, path_exclusions):
             continue
-        commit_time =  datetime.datetime.fromtimestamp(prev_commit.committed_date).strftime('%Y-%m-%d %H:%M:%S')
+        commit_time = datetime.datetime.fromtimestamp(prev_commit.committed_date).strftime('%Y-%m-%d %H:%M:%S')
         foundIssues = []
         if do_entropy:
             entropicDiff = find_entropy(printableDiff, commit_time, branch_name, prev_commit, blob, commitHash)
@@ -269,6 +270,7 @@ def diff_worker(diff, curr_commit, prev_commit, branch_name, commitHash, custom_
         issues += foundIssues
     return issues
 
+
 def handle_results(output, output_dir, foundIssues):
     for foundIssue in foundIssues:
         result_path = os.path.join(output_dir, str(uuid.uuid4()))
@@ -276,6 +278,7 @@ def handle_results(output, output_dir, foundIssues):
             result_file.write(json.dumps(foundIssue))
         output["foundIssues"].append(result_path)
     return output
+
 
 def path_included(blob, include_patterns=None, exclude_patterns=None):
     """Check if the diff blob object should included in analysis.

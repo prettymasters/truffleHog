@@ -8,12 +8,12 @@ setup(
     author='Dylan Ayrey',
     author_email='dxa4481@rit.edu',
     license='GNU',
-    packages = ['truffleHog'],
+    packages=['truffleHog'],
     install_requires=[
         'GitPython == 3.0.6',
         'truffleHogRegexes == 0.0.7'
     ],
-    entry_points = {
+    entry_points={
       'console_scripts': ['trufflehog = truffleHog.truffleHog:main'],
     },
 )
