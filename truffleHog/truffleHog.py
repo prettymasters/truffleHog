@@ -2,6 +2,8 @@
 # -*- coding: utf-8 -*-
 
 from __future__ import absolute_import
+
+import pathlib
 import shutil
 import sys
 import math
@@ -39,7 +41,11 @@ def main():
                              'in order for it to be scanned; lines starting with "#" are treated as comments and are '
                              'ignored. If empty or not provided (default), no Git object paths are excluded unless '
                              'effectively excluded via the --include_paths option.')
-    parser.add_argument("--repo_path", type=str, dest="repo_path", help="Path to the cloned repo. If provided, git_url will not be used")
+    parser.add_argument("--repo_path", type=str, dest="repo_path", help="Path to the cloned repo. If provided, git_url "
+                                                                        "will not be used")
+    parser.add_argument("--tmp_path", type=str, dest="tmp_path", help="Checkouts will happen in this directory, "
+                                                                      "otherwise it get checkout to the default tmp "
+                                                                      "location")
     parser.add_argument("--cleanup", dest="cleanup", action="store_true", help="Clean up all temporary result files")
     parser.add_argument('git_url', type=str, help='URL for secret searching')
     parser.set_defaults(regex=False)
@@ -50,6 +56,7 @@ def main():
     parser.set_defaults(branch=None)
     parser.set_defaults(repo_path=None)
     parser.set_defaults(cleanup=False)
+    parser.set_defaults(tmp_path=None)
     args = parser.parse_args()
     rules = {}
     if args.rules:
@@ -79,7 +86,9 @@ def main():
                 path_exclusions.append(re.compile(pattern))
 
     output = find_strings(args.git_url, args.since_commit, args.max_depth, args.output_json, args.do_regex, do_entropy,
-            surpress_output=False, branch=args.branch, repo_path=args.repo_path, path_inclusions=path_inclusions, path_exclusions=path_exclusions)
+                          surpress_output=False, branch=args.branch, repo_path=args.repo_path,
+                          path_inclusions=path_inclusions, path_exclusions=path_exclusions, tmp_path=args.tmp_path)
+
     project_path = output["project_path"]
     if args.cleanup:
         clean_up(output)
@@ -306,8 +315,24 @@ def path_included(blob, include_patterns=None, exclude_patterns=None):
     return True
 
 
-def find_strings(git_url, since_commit=None, max_depth=1000000, printJson=False, do_regex=False, do_entropy=True, surpress_output=True,
-                custom_regexes={}, branch=None, repo_path=None, path_inclusions=None, path_exclusions=None):
+def get_checkout_destination(temp_path=None):
+
+    if temp_path:
+        # Build output directory if it does not exist
+        pathlib.Path(temp_path).mkdir(parents=True, exist_ok=True)
+
+        project_path = tempfile.mkdtemp(dir=temp_path)
+    else:
+        project_path = tempfile.mkdtemp()
+
+    return project_path
+
+
+def find_strings(git_url, since_commit=None, max_depth=1000000, printJson=False, do_regex=False, do_entropy=True,
+                 surpress_output=True,
+                 custom_regexes={}, branch=None, repo_path=None, path_inclusions=None, path_exclusions=None,
+                 tmp_path=None):
+
     output = {"foundIssues": []}
     if repo_path:
         project_path = repo_path
@@ -315,7 +340,8 @@ def find_strings(git_url, since_commit=None, max_depth=1000000, printJson=False,
         project_path = clone_git_repo(git_url)
     repo = Repo(project_path)
     already_searched = set()
-    output_dir = tempfile.mkdtemp()
+    # output_dir = tempfile.mkdtemp()
+    output_dir = get_checkout_destination(tmp_path)
 
     if branch:
         branches = repo.remotes.origin.fetch(branch)
@@ -362,7 +388,6 @@ def find_strings(git_url, since_commit=None, max_depth=1000000, printJson=False,
     return output
 
 def clean_up(output):
-    print("Whhaat")
     issues_path = output.get("issues_path", None)
     if issues_path and os.path.isdir(issues_path):
         shutil.rmtree(output["issues_path"])
